@@ -4,5 +4,5 @@ from . import views
 app_name = 'flights'
 
 urlpatterns = [
-    path('flights/', views.TestView.as_view() ,name='flights' )
+    path('flights/', views.GetFlightsView.as_view() ,name='flights' )
 ]

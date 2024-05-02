@@ -12,6 +12,7 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .filters import CustomFilter
 
 # Create your views here.
 api_key = "openai_key"
@@ -126,14 +127,15 @@ def get_general_info(url, more_than_one_passeger=False):
 
 # Verifica que la solicitud fue exitosa
 
-class TestView(APIView):
-    def post(self, request):
-        data = request.data
-        origin = data.get('ciudad_origen')
-        destination = data.get('ciudad_destino')
-        date = data.get('fecha')
-        adults = data.get('adultos')
-        children = data.get('niños')
+class GetFlightsView(APIView):
+    filter_backends = [CustomFilter]
+
+    def get(self, request):
+        origin = request.GET.get('ciudad_origen')
+        destination = request.GET.get('ciudad_destino')
+        date = request.GET.get('fecha')
+        adults = request.GET.get('adultos')
+        children = request.GET.get('niños')
         final_url = set_url(origin=origin,destination=destination,departure_date=date,adults=adults,children=children)
         if final_url[0] == True:
             print("url: ",final_url[1])
@@ -146,5 +148,4 @@ class TestView(APIView):
                 return Response(general_info, status=status.HTTP_200_OK)
         else: 
             return Response({'error':'Invalid URL'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    
+
