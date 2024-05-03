@@ -3,3 +3,4 @@ djangorestframework==3.15.1
 beautifulsoup4
 openai
 selenium
+django-filter

@@ -13,11 +13,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .filters import CustomFilter
-
+from django_filters import rest_framework as filters
+from .serializers import FlightSerializer
 # Create your views here.
 api_key = "openai_key"
 openai.api_key=api_key
 base_url = "https://www.kayak.com.co/flights/"
+flights = []
 
 def ask_open_ai(city, model="gpt-3.5-turbo-16k"):
     prompt = f'''Cuál es la abreviatura IATA de {city}, responde solo con la abreviatura, no digas nada más'''
@@ -128,9 +130,8 @@ def get_general_info(url, more_than_one_passeger=False):
 # Verifica que la solicitud fue exitosa
 
 class GetFlightsView(APIView):
-    filter_backends = [CustomFilter]
-
     def get(self, request):
+        global flights
         origin = request.GET.get('ciudad_origen')
         destination = request.GET.get('ciudad_destino')
         date = request.GET.get('fecha')
@@ -141,11 +142,33 @@ class GetFlightsView(APIView):
             print("url: ",final_url[1])
             if adults is not None or children is not None:
                 general_info = get_general_info(final_url[1],more_than_one_passeger=True)
+                flights = general_info
                 return Response(general_info, status=status.HTTP_200_OK)
             else:
                 print("url: ",final_url[1])
                 general_info = get_general_info(final_url[1])
+                flights = general_info
                 return Response(general_info, status=status.HTTP_200_OK)
+
         else: 
             return Response({'error':'Invalid URL'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class FilterFlightsView(APIView):
+    def get(self, request):
+        queryset = flights
+        airline = request.GET.get('airline')
+        minimun_price = request.GET.get('minimun_price')
+        maximun_price = request.GET.get('maximun_price')
+        if airline is not None:
+            queryset = [flight for flight in queryset if flight.get('airline').lower() == airline.lower()]
+        if maximun_price is not None:
+            queryset = [flight for flight in queryset if int(flight.get('price')[1:].replace(".", "")) < int(maximun_price.replace(".", ""))]
+
+        if len(queryset)>0:
+            return Response(queryset, status=status.HTTP_200_OK)
+        elif len(queryset)==0:
+            return Response({'messagge':'No flights to show'}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'messagge':'An error has ocurred'}, status=status.HTTP_404_NOT_FOUND)
 
