@@ -5,3 +5,4 @@ openai
 selenium
 django-filter
 datetime
+django-cors-headers

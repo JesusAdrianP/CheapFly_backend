@@ -39,10 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'corsheaders',
     'django_filters',
 
     'flights',
 ]
+
+CORS_ALLOWED_ALL_ORIGINS= True
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
