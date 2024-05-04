@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import json
 import openai
 import time
 from selenium import webdriver
@@ -15,10 +16,16 @@ from rest_framework.views import APIView
 from datetime import datetime
 
 # Create your views here.
-api_key = "openai_key"
-openai.api_key=api_key
 base_url = "https://www.kayak.com.co/flights/"
 flights = []
+
+def get_secret_key():
+    with open('secrets.json') as f:
+        secrets = json.load(f)
+    return secrets['OPENAI_KEY']
+
+api_key = get_secret_key()
+openai.api_key= api_key
 
 def ask_open_ai(city, model="gpt-3.5-turbo-16k"):
     prompt = f'''Cuál es la abreviatura IATA de {city}, responde solo con la abreviatura, no digas nada más'''
@@ -185,8 +192,8 @@ class GetFlightsView(APIView):
         departure_date_parsed = None
         return_date_parsed = None
         global flights
-        origin = request.GET.get('city_of_origin')
-        destination = request.GET.get('destination_city')
+        origin = ask_open_ai(request.GET.get('city_of_origin'))
+        destination = ask_open_ai(request.GET.get('destination_city'))
         departure_date = request.GET.get('departure_date')
         return_date = request.GET.get('return_date')
         if departure_date is not None:
