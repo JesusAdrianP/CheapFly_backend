@@ -12,5 +12,11 @@ source venv/bin/activate
 Luego instalar los requerimientos con pip:  
 pip install -r requirements.txt  
 
+Debe solicitar una api_key en openai, luego crear un archivo secrets.json en la carpeta del proyecto, con la siguiente estructura:  
+
+{
+    "OPENAI_KEY": your_api_key
+}  
+
 Para correr el servidor:  
 python manage.py runserver
