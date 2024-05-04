@@ -12,9 +12,8 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .filters import CustomFilter
-from django_filters import rest_framework as filters
-from .serializers import FlightSerializer
+from datetime import datetime
+
 # Create your views here.
 api_key = "openai_key"
 openai.api_key=api_key
@@ -49,7 +48,7 @@ def set_url(origin="", destination="", departure_date="", return_date="",adults=
         if departure_date is not None and return_date is not None:
             url = f"{base_url}{cities}/{departure_date}/{return_date}?sort=price_a"
             valid_url = True
-            if adults is not None:
+            if adults is not None and int(adults)>1:
                 url = f"{base_url}{cities}/{departure_date}/{return_date}/{adults}adults?sort=price_a"
                 if children is not None:
                     if children>0:
@@ -67,9 +66,10 @@ def set_url(origin="", destination="", departure_date="", return_date="",adults=
                         print("niños: ",number_of_children) 
                         url = f"{base_url}{cities}/{departure_date}/{return_date}/1adults/{number_of_children}?sort=price_a"  
         elif return_date is None:
+            print(return_date)
             url = f"{base_url}{cities}/{departure_date}?sort=price_a"
             valid_url = True
-            if adults is not None:
+            if adults is not None and int(adults)>1:
                 url = f"{base_url}{cities}/{departure_date}/{return_date}/{adults}adults?sort=price_a"
                 if children is not None:
                     if children>0:
@@ -92,9 +92,30 @@ def set_url(origin="", destination="", departure_date="", return_date="",adults=
         valid_url = False
     return [valid_url, url]
 
+def counting_scales(scales):
+    elements_of_scales = scales.split(",")
+    number_of_scales = 0
+    if scales != "":
+        number_of_scales = len(elements_of_scales)
+    else:
+        number_of_scales = 0
+    return number_of_scales
 
 
-def get_general_info(url, more_than_one_passeger=False):
+
+def dateParser(date):
+    date_format = datetime.strptime(date,"%d-%m-%Y")
+    date_parsed = date_format.strftime("%Y-%m-%d")
+    return date_parsed
+
+def find_div_element_in_list(list_of_elements, class_):
+    list_of_div_elements = []
+    for i in list_of_elements:
+        div_element = i.find("div", class_=class_)
+        list_of_div_elements.append(div_element)
+    return list_of_div_elements
+
+def get_general_info(url, more_than_one_passeger=False, round_trip = False):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=options)
@@ -105,23 +126,53 @@ def get_general_info(url, more_than_one_passeger=False):
 
     for webElement in flights_rows:
         if more_than_one_passeger:
-            elementHTML= webElement.get_attribute('outerHTML')
-            elementSoup = BeautifulSoup(elementHTML,'html.parser')
-            price = elementSoup.find("div", class_="f8F1-small-emph f8F1-multiple-ptc-total-price")
-            airline = elementSoup.find("div", class_="J0g6-operator-text")
-            flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
-            flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
-            print(flight_time)
-            general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text})
+            if round_trip:
+                elementHTML= webElement.get_attribute('outerHTML')
+                elementSoup = BeautifulSoup(elementHTML,'html.parser')
+                price = elementSoup.find("div", class_="f8F1-small-emph f8F1-multiple-ptc-total-price")
+                airline = elementSoup.find("div", class_="J0g6-operator-text")
+                flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
+                flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
+                scales_element = elementSoup.find("div",class_="JWEO")
+                scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
+                number_of_scales = counting_scales(scales.text)
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
+            else:
+                elementHTML= webElement.get_attribute('outerHTML')
+                elementSoup = BeautifulSoup(elementHTML,'html.parser')
+                price = elementSoup.find("div", class_="f8F1-small-emph f8F1-multiple-ptc-total-price")
+                airline = elementSoup.find("div", class_="J0g6-operator-text")
+                flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
+                flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
+                scales_element = elementSoup.find("div",class_="JWEO")
+                scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
+                number_of_scales = counting_scales(scales.text)
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
         else:
-            elementHTML= webElement.get_attribute('outerHTML')
-            elementSoup = BeautifulSoup(elementHTML,'html.parser')
-            price = elementSoup.find("div", class_="f8F1-price-text")
-            airline = elementSoup.find("div", class_="J0g6-operator-text")
-            flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
-            flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
-            print(flight_time)
-            general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text})
+            if round_trip:
+                elementHTML= webElement.get_attribute('outerHTML')
+                elementSoup = BeautifulSoup(elementHTML,'html.parser')
+                price = elementSoup.find("div", class_="f8F1-price-text")
+                airline = elementSoup.find("div", class_="J0g6-operator-text")
+                flight_time_element = elementSoup.find_all("div", class_="xdW8 xdW8-mod-full-airport")
+                flight_time = find_div_element_in_list(flight_time_element, "vmXl vmXl-mod-variant-default")
+                scales_element = elementSoup.find_all("div",class_="JWEO")
+                scales = find_div_element_in_list(scales_element, "c_cgF c_cgF-mod-variant-full-airport")
+                print("scales_elements: ", scales)
+                outbound_trip_number_of_scales = counting_scales(scales[0].text)
+                return_number_of_scales = counting_scales(scales[1].text)
+                general_info.append({"airline": airline.text,"price":price.text, "outbound_trip_time":flight_time[0].text,"return_trip_time":flight_time[1].text,"outbound_trip_number_of_scales": outbound_trip_number_of_scales, "outbound_trip_scales": scales[0].text,"return_trip_number_of_scales": return_number_of_scales, "return_trip_scales": scales[1].text})
+            else:
+                elementHTML= webElement.get_attribute('outerHTML')
+                elementSoup = BeautifulSoup(elementHTML,'html.parser')
+                price = elementSoup.find("div", class_="f8F1-price-text")
+                airline = elementSoup.find("div", class_="J0g6-operator-text")
+                flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
+                flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
+                scales_element = elementSoup.find("div",class_="JWEO")
+                scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
+                number_of_scales = counting_scales(scales.text)
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
 
     driver.quit()
     return general_info
@@ -131,25 +182,43 @@ def get_general_info(url, more_than_one_passeger=False):
 
 class GetFlightsView(APIView):
     def get(self, request):
+        departure_date_parsed = None
+        return_date_parsed = None
         global flights
-        origin = request.GET.get('ciudad_origen')
-        destination = request.GET.get('ciudad_destino')
-        date = request.GET.get('fecha')
-        adults = request.GET.get('adultos')
-        children = request.GET.get('niños')
-        final_url = set_url(origin=origin,destination=destination,departure_date=date,adults=adults,children=children)
+        origin = request.GET.get('city_of_origin')
+        destination = request.GET.get('destination_city')
+        departure_date = request.GET.get('departure_date')
+        return_date = request.GET.get('return_date')
+        if departure_date is not None:
+            departure_date_parsed = dateParser(departure_date)
+            if return_date is not None:
+                return_date_parsed = dateParser(return_date)
+        adults = request.GET.get('adults')
+        children = request.GET.get('children')
+        final_url = set_url(origin=origin,destination=destination,departure_date=departure_date_parsed,return_date=return_date_parsed,adults=adults,children=children)
         if final_url[0] == True:
             print("url: ",final_url[1])
-            if adults is not None or children is not None:
-                general_info = get_general_info(final_url[1],more_than_one_passeger=True)
-                flights = general_info
-                return Response(general_info, status=status.HTTP_200_OK)
-            else:
-                print("url: ",final_url[1])
-                general_info = get_general_info(final_url[1])
-                flights = general_info
-                return Response(general_info, status=status.HTTP_200_OK)
+            if (adults is not None and int(adults)>1) or children is not None:
+                if return_date is not None:
+                    general_info = get_general_info(final_url[1],more_than_one_passeger=True, round_trip= True)
+                    flights = general_info
+                    return Response(general_info, status=status.HTTP_200_OK)
 
+                else:
+                    general_info = get_general_info(final_url[1],more_than_one_passeger=True, round_trip=False)
+                    flights = general_info
+                    return Response(general_info, status=status.HTTP_200_OK)
+            else:
+                if return_date is not None:
+                    print("url: ",final_url[1])
+                    general_info = get_general_info(final_url[1], round_trip= True)
+                    flights = general_info
+                    return Response(general_info, status=status.HTTP_200_OK)
+                else:
+                    print("url: ",final_url[1])
+                    general_info = get_general_info(final_url[1], round_trip= False)
+                    flights = general_info
+                    return Response(general_info, status=status.HTTP_200_OK)
         else: 
             return Response({'error':'Invalid URL'}, status=status.HTTP_400_BAD_REQUEST)
         
