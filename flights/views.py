@@ -27,6 +27,9 @@ def get_secret_key():
 api_key = get_secret_key()
 openai.api_key= api_key
 
+def transformPricesToInt(price):
+    return price[1:].replace(".", "")
+
 def ask_open_ai(city, model="gpt-3.5-turbo-16k"):
     prompt = f'''Cuál es la abreviatura IATA de {city}, responde solo con la abreviatura, no digas nada más'''
 
@@ -236,11 +239,15 @@ class FilterFlightsView(APIView):
         airline = request.GET.get('airline')
         minimun_price = request.GET.get('minimun_price')
         maximun_price = request.GET.get('maximun_price')
+        number_of_scales = request.GET.get('number_of_scales')
         if airline is not None:
-            queryset = [flight for flight in queryset if flight.get('airline').lower() == airline.lower()]
+            queryset = [flight for flight in queryset if airline.lower() in flight.get('airline').lower()]
+        if minimun_price is not None:
+            queryset = [flight for flight in queryset if int(transformPricesToInt(flight.get('price'))) > int(minimun_price)]
         if maximun_price is not None:
-            queryset = [flight for flight in queryset if int(flight.get('price')[1:].replace(".", "")) < int(maximun_price.replace(".", ""))]
-
+            queryset = [flight for flight in queryset if int(transformPricesToInt(flight.get('price'))) < int(maximun_price)]
+        if number_of_scales is not None:
+            queryset = [flight for flight in queryset if flight.get('number_of_scales') == int(number_of_scales)]
         if len(queryset)>0:
             return Response(queryset, status=status.HTTP_200_OK)
         elif len(queryset)==0:
