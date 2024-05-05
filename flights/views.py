@@ -146,7 +146,11 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 scales_element = elementSoup.find("div",class_="JWEO")
                 scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
                 number_of_scales = counting_scales(scales.text)
-                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
+                offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
+                offer_class = offer_button.find('div', class_="oVHK")
+                offer_link_element = offer_class.find('a')
+                offer_link = f"www.kayak.com.co{offer_link_element.get("href")}"
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text, "offer_link": offer_link})
             else:
                 elementHTML= webElement.get_attribute('outerHTML')
                 elementSoup = BeautifulSoup(elementHTML,'html.parser')
@@ -157,7 +161,11 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 scales_element = elementSoup.find("div",class_="JWEO")
                 scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
                 number_of_scales = counting_scales(scales.text)
-                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
+                offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
+                offer_class = offer_button.find('div', class_="oVHK")
+                offer_link_element = offer_class.find('a')
+                offer_link = f"www.kayak.com.co{offer_link_element.get("href")}"
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text, "offer_link": offer_link})
         else:
             if round_trip:
                 elementHTML= webElement.get_attribute('outerHTML')
@@ -171,7 +179,11 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 print("scales_elements: ", scales)
                 outbound_trip_number_of_scales = counting_scales(scales[0].text)
                 return_number_of_scales = counting_scales(scales[1].text)
-                general_info.append({"airline": airline.text,"price":price.text, "outbound_trip_time":flight_time[0].text,"return_trip_time":flight_time[1].text,"outbound_trip_number_of_scales": outbound_trip_number_of_scales, "outbound_trip_scales": scales[0].text,"return_trip_number_of_scales": return_number_of_scales, "return_trip_scales": scales[1].text})
+                offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
+                offer_class = offer_button.find('div', class_="oVHK")
+                offer_link_element = offer_class.find('a')
+                offer_link = f"www.kayak.com.co{offer_link_element.get("href")}"
+                general_info.append({"airline": airline.text,"price":price.text, "outbound_trip_time":flight_time[0].text,"return_trip_time":flight_time[1].text,"outbound_trip_number_of_scales": outbound_trip_number_of_scales, "outbound_trip_scales": scales[0].text,"return_trip_number_of_scales": return_number_of_scales, "return_trip_scales": scales[1].text, "offer_link": offer_link})
             else:
                 elementHTML= webElement.get_attribute('outerHTML')
                 elementSoup = BeautifulSoup(elementHTML,'html.parser')
@@ -182,7 +194,11 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 scales_element = elementSoup.find("div",class_="JWEO")
                 scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
                 number_of_scales = counting_scales(scales.text)
-                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text})
+                offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
+                offer_class = offer_button.find('div', class_="oVHK")
+                offer_link_element = offer_class.find('a')
+                offer_link = f"www.kayak.com.co{offer_link_element.get("href")}"
+                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text, "offer_link": offer_link})
 
     driver.quit()
     return general_info
