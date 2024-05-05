@@ -28,7 +28,7 @@ api_key = get_secret_key()
 openai.api_key= api_key
 
 def transformPricesToInt(price):
-    return price[1:].replace(".", "")
+    return int(price[1:].replace(".", ""))
 
 def ask_open_ai(city, model="gpt-3.5-turbo-16k"):
     prompt = f'''Cuál es la abreviatura IATA de {city}, responde solo con la abreviatura, no digas nada más'''
@@ -141,16 +141,17 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 elementSoup = BeautifulSoup(elementHTML,'html.parser')
                 price = elementSoup.find("div", class_="f8F1-small-emph f8F1-multiple-ptc-total-price")
                 airline = elementSoup.find("div", class_="J0g6-operator-text")
-                flight_time_element = elementSoup.find("div", class_="xdW8 xdW8-mod-full-airport")
-                flight_time = flight_time_element.find("div", class_="vmXl vmXl-mod-variant-default")
-                scales_element = elementSoup.find("div",class_="JWEO")
-                scales = scales_element.find("div", class_="c_cgF c_cgF-mod-variant-full-airport")
-                number_of_scales = counting_scales(scales.text)
+                flight_time_element = elementSoup.find_all("div", class_="xdW8 xdW8-mod-full-airport")
+                flight_time = find_div_element_in_list(flight_time_element, "vmXl vmXl-mod-variant-default")
+                scales_element = elementSoup.find_all("div",class_="JWEO")
+                scales = find_div_element_in_list(scales_element, "c_cgF c_cgF-mod-variant-full-airport")
+                outbound_trip_number_of_scales = counting_scales(scales[0].text)
+                return_number_of_scales = counting_scales(scales[1].text)
                 offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
                 offer_class = offer_button.find('div', class_="oVHK")
                 offer_link_element = offer_class.find('a')
                 offer_link = f"www.kayak.com.co{offer_link_element.get("href")}"
-                general_info.append({"airline": airline.text,"price":price.text, "flight_time":flight_time.text,"number_of_scales": number_of_scales, "scales": scales.text, "offer_link": offer_link})
+                general_info.append({"airline": airline.text,"price":price.text, "outbound_trip_time":flight_time[0].text,"return_trip_time":flight_time[1].text,"outbound_trip_number_of_scales": outbound_trip_number_of_scales, "outbound_trip_scales": scales[0].text,"return_trip_number_of_scales": return_number_of_scales, "return_trip_scales": scales[1].text, "offer_link": offer_link})
             else:
                 elementHTML= webElement.get_attribute('outerHTML')
                 elementSoup = BeautifulSoup(elementHTML,'html.parser')
@@ -176,7 +177,6 @@ def get_general_info(url, more_than_one_passeger=False, round_trip = False):
                 flight_time = find_div_element_in_list(flight_time_element, "vmXl vmXl-mod-variant-default")
                 scales_element = elementSoup.find_all("div",class_="JWEO")
                 scales = find_div_element_in_list(scales_element, "c_cgF c_cgF-mod-variant-full-airport")
-                print("scales_elements: ", scales)
                 outbound_trip_number_of_scales = counting_scales(scales[0].text)
                 return_number_of_scales = counting_scales(scales[1].text)
                 offer_button = elementSoup.find('div', class_="dOAU-main-btn-wrap")
@@ -259,11 +259,16 @@ class FilterFlightsView(APIView):
         if airline is not None:
             queryset = [flight for flight in queryset if airline.lower() in flight.get('airline').lower()]
         if minimun_price is not None:
-            queryset = [flight for flight in queryset if int(transformPricesToInt(flight.get('price'))) > int(minimun_price)]
+            queryset = [flight for flight in queryset if transformPricesToInt(flight.get('price')) > int(minimun_price)]
         if maximun_price is not None:
-            queryset = [flight for flight in queryset if int(transformPricesToInt(flight.get('price'))) < int(maximun_price)]
+            queryset = [flight for flight in queryset if transformPricesToInt(flight.get('price')) < int(maximun_price)]
         if number_of_scales is not None:
-            queryset = [flight for flight in queryset if flight.get('number_of_scales') == int(number_of_scales)]
+            if flights[0].get('number_of_scales') is not None:
+                queryset = [flight for flight in queryset if flight.get('number_of_scales') == int(number_of_scales)]
+            elif flights[0].get('outbound_trip_number_of_scales') is not None:
+                queryset = [flight for flight in queryset if flight.get('outbound_trip_number_of_scales') == int(number_of_scales)]
+            elif flights[0].get('return_trip_number_of_scales') is not None:
+                queryset = [flight for flight in queryset if flight.get('return_trip_number_of_scales') == int(number_of_scales)]
         if len(queryset)>0:
             return Response(queryset, status=status.HTTP_200_OK)
         elif len(queryset)==0:
